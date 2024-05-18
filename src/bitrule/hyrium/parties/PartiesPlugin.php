@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace bitrule\hyrium\parties;
 
+use bitrule\hyrium\parties\service\protocol\PartyNetworkDisbandedPacket;
+use bitrule\services\Service;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\utils\TextFormat;
@@ -19,12 +21,14 @@ final class PartiesPlugin extends PluginBase {
     }
 
     public function onEnable(): void {
+        Service::getInstance()->registerPacket(new PartyNetworkDisbandedPacket());
+
         $this->getServer()->getPluginManager()->registerEvents(new listener\PlayerPreLoginListener(), $this);
 
         $this->getServer()->getCommandMap()->register('parties', new command\PartyCommand());
     }
 
     public static function prefix(): string {
-        return TextFormat::YELLOW . TextFormat::BOLD . 'Parties ' . TextFormat::GOLD . '» ' . TextFormat::RESET;
+        return TextFormat::BLUE . TextFormat::BOLD . 'Party ' . TextFormat::GOLD . '» ' . TextFormat::RESET;
     }
 }

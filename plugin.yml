@@ -4,6 +4,8 @@ author: bitrule
 version: "1.0"
 api: 5.0.0
 main: bitrule\hyrium\parties\PartiesPlugin
+softdepend:
+- Gorufus
 permissions:
   parties.command.default:
     default: op

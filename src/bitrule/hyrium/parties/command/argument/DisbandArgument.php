@@ -39,8 +39,6 @@ final class DisbandArgument extends Argument {
         PartiesService::getInstance()->postDelete(
             $party->getId(),
             function (PongResponse $response) use ($party, $sender): void {
-                PartiesService::getInstance()->remove($party);
-
                 $sender->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'Your party has been successfully disbanded!');
             },
             function (EmptyResponse $response) use ($sender): void {

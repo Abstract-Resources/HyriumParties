@@ -42,23 +42,25 @@ final class CreateArgument extends Argument {
         $party->addMember($member = new Member(
             $sender->getXuid(),
             $sender->getName(),
-            Role::OWNER
+            Role::OWNER,
+            true
         ));
 
         PartiesService::getInstance()->addPlayerRequest($sender->getXuid());
 
-        PartiesService::getInstance()->postUpdate(
-            $party,
+        PartiesService::getInstance()->postPlayerJoined(
+            $member,
+            $party->getId(),
             function (PongResponse $pong) use ($sender, $member, $party): void {
                 PartiesService::getInstance()->cache($party);
-                PartiesService::getInstance()->cacheMember($member, $party->getId());
+                PartiesService::getInstance()->cacheMember($member->getXuid(), $party->getId());
 
                 PartiesService::getInstance()->removePlayerRequest($sender->getXuid());
 
-                $sender->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'Your party has been successfully created!');
+                $sender->sendMessage(PartiesPlugin::prefix() . TextFormat::GOLD . 'You have successfully created a party!');
             },
             function (EmptyResponse $response) use ($sender): void {
-                $sender->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . 'Failed to create party');
+                $sender->sendMessage(PartiesPlugin::prefix() . TextFormat::GOLD . 'Failed to create party');
                 $sender->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . $response->getMessage());
 
                 PartiesService::getInstance()->removePlayerRequest($sender->getXuid());

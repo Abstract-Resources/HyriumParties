@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace bitrule\hyrium\parties\object;
 
+use InvalidArgumentException;
+use RuntimeException;
+use function array_map;
+
 final class Party {
 
     /**
@@ -48,13 +52,15 @@ final class Party {
             return $member;
         }
 
-        throw new \RuntimeException('No owner found');
+        throw new RuntimeException('No owner found');
     }
 
     /**
      * @return array<string, Member>
      */
-    public function getMembers(): array {
+    public function getMembers(bool $literal = true): array {
+        if ($literal) return array_filter($this->members, fn(Member $member): bool => $member->hasJoined());
+
         return $this->members;
     }
 
@@ -64,7 +70,13 @@ final class Party {
      * @return bool
      */
     public function isMember(string $xuid): bool {
-        return isset($this->members[$xuid]);
+        foreach ($this->members as $member) {
+            if (!$member->hasJoined() || $member->getXuid() !== $xuid) continue;
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -82,11 +94,38 @@ final class Party {
     }
 
     /**
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function hasPendingInvite(string $name): bool {
+        foreach ($this->members as $member) {
+            if (strtolower($member->getName()) !== strtolower($name)) continue;
+            if ($member->hasJoined()) continue;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @param array $data
      *
      * @return self
      */
     public static function fromArray(array $data): self {
+        if (!isset($data['id'], $data['members'])) {
+            throw new InvalidArgumentException('Invalid party data');
+        }
 
+        return new self(
+            $data['id'],
+            $data['open'] ?? false,
+            array_map(
+                fn(array $member): Member => Member::wrap($member),
+                $data['members']
+            )
+        );
     }
 }

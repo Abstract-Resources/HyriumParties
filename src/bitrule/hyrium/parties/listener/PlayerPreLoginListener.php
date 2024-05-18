@@ -40,7 +40,7 @@ final class PlayerPreLoginListener implements Listener {
                 PartiesService::getInstance()->cache($party);
 
                 foreach ($party->getMembers() as $member) {
-                    PartiesService::getInstance()->cacheMember($member, $party->getId());
+                    PartiesService::getInstance()->cacheMember($member->getXuid(), $party->getId());
                 }
             },
             function (EmptyResponse $response) use ($playerInfo): void {

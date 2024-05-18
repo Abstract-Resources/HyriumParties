@@ -10,11 +10,13 @@ final class Member {
      * @param string $xuid
      * @param string $name
      * @param Role   $role
+     * @param bool   $joined
      */
     public function __construct(
         private readonly string $xuid,
         private readonly string $name,
-        private Role $role
+        private Role $role,
+        private bool $joined = false
     ) {}
 
     /**
@@ -43,6 +45,22 @@ final class Member {
      */
     public function setRole(Role $role): void {
         $this->role = $role;
+    }
+
+    /**
+     * Lets the system know that the member has joined the party
+     *
+     * @return bool
+     */
+    public function hasJoined(): bool {
+        return $this->joined;
+    }
+
+    /**
+     * @param bool $joined
+     */
+    public function setJoined(bool $joined): void {
+        $this->joined = $joined;
     }
 
     /**
