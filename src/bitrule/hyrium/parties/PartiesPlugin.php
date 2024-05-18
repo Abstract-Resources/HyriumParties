@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace bitrule\hyrium\parties;
 
 use bitrule\hyrium\parties\service\protocol\PartyNetworkDisbandedPacket;
+use bitrule\hyrium\parties\service\protocol\PartyNetworkInvitedPacket;
 use bitrule\services\Service;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\SingletonTrait;
@@ -22,6 +23,7 @@ final class PartiesPlugin extends PluginBase {
 
     public function onEnable(): void {
         Service::getInstance()->registerPacket(new PartyNetworkDisbandedPacket());
+        Service::getInstance()->registerPacket(new PartyNetworkInvitedPacket());
 
         $this->getServer()->getPluginManager()->registerEvents(new listener\PlayerPreLoginListener(), $this);
 
