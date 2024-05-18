@@ -3,5 +3,8 @@ name: HyriumParties
 author: bitrule
 version: "1.0"
 api: 5.0.0
-main: bitrule\hyrium\parties\PluginMain
+main: bitrule\hyrium\parties\PartiesPlugin
+permissions:
+  parties.command.default:
+    default: op
 ...

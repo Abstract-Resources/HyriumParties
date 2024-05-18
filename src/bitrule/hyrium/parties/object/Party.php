@@ -7,14 +7,14 @@ namespace bitrule\hyrium\parties\object;
 final class Party {
 
     /**
-     * @param string $id
-     * @param string $ownership
-     * @param array<string, Member>  $members
+     * @param string                $id
+     * @param bool                  $open
+     * @param array<string, Member> $members
      */
     public function __construct(
         private readonly string $id,
-        private string $ownership,
-        private array $members
+        private bool $open = false,
+        private array $members = []
     ) {}
 
     /**
@@ -25,17 +25,30 @@ final class Party {
     }
 
     /**
-     * @return string
+     * @return bool
      */
-    public function getOwnership(): string {
-        return $this->ownership;
+    public function isOpen(): bool {
+        return $this->open;
     }
 
     /**
-     * @param string $ownership
+     * @param bool $open
      */
-    public function setOwnership(string $ownership): void {
-        $this->ownership = $ownership;
+    public function setOpen(bool $open): void {
+        $this->open = $open;
+    }
+
+    /**
+     * @return Member
+     */
+    public function getOwnership(): Member {
+        foreach ($this->members as $member) {
+            if ($member->getRole() !== Role::OWNER) continue;
+
+            return $member;
+        }
+
+        throw new \RuntimeException('No owner found');
     }
 
     /**
@@ -66,5 +79,14 @@ final class Party {
      */
     public function removeMember(string $xuid): void {
         unset($this->members[$xuid]);
+    }
+
+    /**
+     * @param array $data
+     *
+     * @return self
+     */
+    public static function fromArray(array $data): self {
+
     }
 }
