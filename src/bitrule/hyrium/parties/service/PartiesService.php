@@ -6,6 +6,7 @@ namespace bitrule\hyrium\parties\service;
 
 use bitrule\hyrium\parties\object\Member;
 use bitrule\hyrium\parties\object\Party;
+use bitrule\hyrium\parties\object\response\PartyInviteResponse;
 use bitrule\hyrium\parties\PartiesPlugin;
 use bitrule\services\response\EmptyResponse;
 use bitrule\services\response\PongResponse;
@@ -15,6 +16,12 @@ use Exception;
 use libasynCurl\Curl;
 use pocketmine\utils\InternetRequestResult;
 use pocketmine\utils\SingletonTrait;
+use function array_search;
+use function in_array;
+use function is_array;
+use function json_decode;
+use function microtime;
+use function strtoupper;
 
 final class PartiesService {
     use SingletonTrait {
@@ -57,6 +64,15 @@ final class PartiesService {
     }
 
     /**
+     * @param string $id
+     *
+     * @return Party|null
+     */
+    public function getPartyById(string $id): ?Party {
+        return $this->parties[$id] ?? null;
+    }
+
+    /**
      * @param Party $party
      */
     public function cache(Party $party): void {
@@ -64,22 +80,25 @@ final class PartiesService {
     }
 
     /**
-     * @param Party $party
+     * @param string $id
      */
-    public function remove(Party $party): void {
-        unset($this->parties[$party->getId()]);
-
-        foreach ($party->getMembers() as $member) {
-            unset($this->playersParties[$member->getXuid()]);
-        }
+    public function remove(string $id): void {
+        unset($this->parties[$id]);
     }
 
     /**
-     * @param Member $member
+     * @param string $xuid
      * @param string $partyId
      */
-    public function cacheMember(Member $member, string $partyId): void {
-        $this->playersParties[$member->getXuid()] = $partyId;
+    public function cacheMember(string $xuid, string $partyId): void {
+        $this->playersParties[$xuid] = $partyId;
+    }
+
+    /**
+     * @param string $xuid
+     */
+    public function removeMember(string $xuid): void {
+        unset($this->playersParties[$xuid]);
     }
 
     /**
@@ -176,11 +195,12 @@ final class PartiesService {
     }
 
     /**
-     * @param Party   $party
+     * @param Member  $member
+     * @param string  $partyId
      * @param Closure(PongResponse): void $onCompletion
      * @param Closure(EmptyResponse): void $onFail
      */
-    public function postUpdate(Party $party, Closure $onCompletion, Closure $onFail): void {
+    public function postPlayerJoined(Member $member, string $partyId, Closure $onCompletion, Closure $onFail): void {
         if (!Service::getInstance()->isRunning()) {
             $onFail(EmptyResponse::create(
                 Service::CODE_INTERNAL_SERVER_ERROR,
@@ -193,18 +213,8 @@ final class PartiesService {
         $initialTimestamp = microtime(true);
 
         Curl::postRequest(
-            Service::URL . '/parties',
-            [
-                'id' => $party->getId(),
-                'open' => $party->isOpen(),
-                'members' => array_map(
-                    fn(Member $member): array => [
-                        'xuid' => $member->getXuid(),
-                        'role' => $member->getRole()->name
-                    ],
-                    $party->getMembers()
-                )
-            ],
+            Service::URL . '/parties?xuid=' . $member->getXuid() . '&role=' . strtoupper($member->getRole()->name) . '&id=' . $partyId,
+            [],
             10,
             Service::defaultHeaders(),
             function (?InternetRequestResult $result) use ($initialTimestamp, $onCompletion, $onFail): void {
@@ -230,6 +240,66 @@ final class PartiesService {
                         $code,
                         $initialTimestamp,
                         microtime(true)
+                    ));
+                } elseif (!isset($body['message'])) {
+                    $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body message'));
+                } else {
+                    $onFail(EmptyResponse::create($code, $body['message']));
+                }
+            }
+        );
+    }
+
+    /**
+     * @param string  $name
+     * @param string  $partyId
+     * @param Closure(PartyInviteResponse): void $onCompletion
+     * @param Closure(EmptyResponse): void $onFail
+     */
+    public function postPlayerInvite(string $name, string $partyId, Closure $onCompletion, Closure $onFail): void {
+        if (!Service::getInstance()->isRunning()) {
+            $onFail(EmptyResponse::create(
+                Service::CODE_INTERNAL_SERVER_ERROR,
+                'Service is not running'
+            ));
+
+            return;
+        }
+
+        Curl::postRequest(
+            Service::URL . '/parties/invite?name=' . $name . '&id=' . $partyId,
+            [],
+            10,
+            Service::defaultHeaders(),
+            function (?InternetRequestResult $result) use ($onCompletion, $onFail): void {
+                if ($result === null) {
+                    $onFail(EmptyResponse::create(
+                        Service::CODE_INTERNAL_SERVER_ERROR,
+                        'Invite request failed'
+                    ));
+
+                    return;
+                }
+
+                $body = json_decode($result->getBody(), true);
+                if (!is_array($body)) {
+                    $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body response'));
+
+                    return;
+                }
+
+                $code = $result->getCode();
+                if ($code === Service::CODE_OK) {
+                    if (!isset($body['xuid'], $body['known_name'], $body['invited'])) {
+                        $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body response'));
+
+                        return;
+                    }
+
+                    $onCompletion(new PartyInviteResponse(
+                        $body['xuid'],
+                        $body['known_name'],
+                        $body['invited']
                     ));
                 } elseif (!isset($body['message'])) {
                     $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body message'));
