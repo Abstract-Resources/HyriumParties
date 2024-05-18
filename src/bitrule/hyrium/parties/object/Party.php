@@ -6,7 +6,9 @@ namespace bitrule\hyrium\parties\object;
 
 use InvalidArgumentException;
 use RuntimeException;
+use function array_filter;
 use function array_map;
+use function strtolower;
 
 final class Party {
 

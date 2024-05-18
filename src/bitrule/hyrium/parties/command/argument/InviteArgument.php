@@ -15,6 +15,9 @@ use bitrule\services\response\EmptyResponse;
 use pocketmine\player\Player;
 use pocketmine\Server;
 use pocketmine\utils\TextFormat;
+use function array_shift;
+use function count;
+use function is_string;
 
 final class InviteArgument extends Argument {
     use PlayerArgumentTrait;
