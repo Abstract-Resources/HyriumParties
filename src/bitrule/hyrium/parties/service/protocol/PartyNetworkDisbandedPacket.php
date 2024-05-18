@@ -43,6 +43,8 @@ final class PartyNetworkDisbandedPacket extends AbstractPacket {
 
         $disbandedMessage = PartiesPlugin::prefix() . TextFormat::YELLOW . $party->getOwnership()->getName() . TextFormat::GOLD . ' has disbanded the party!';
         foreach ($party->getMembers() as $member) {
+            if (!$member->hasJoined()) continue; // Skip the member if they haven't joined
+
             PartiesService::getInstance()->removeMember($member->getXuid());
 
             $playerObject = Service::getInstance()->getPlayerObject($member->getXuid());

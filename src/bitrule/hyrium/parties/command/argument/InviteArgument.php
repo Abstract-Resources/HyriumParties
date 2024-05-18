@@ -63,10 +63,14 @@ final class InviteArgument extends Argument {
             return;
         }
 
+        PartiesService::getInstance()->addPlayerRequest($sender->getXuid());
+
         PartiesService::getInstance()->postPlayerInvite(
             $name,
             $party->getId(),
             function (PartyInviteResponse $inviteResponse) use ($name, $sender, $party): void {
+                PartiesService::getInstance()->removePlayerRequest($sender->getXuid());
+
                 if ($inviteResponse->getXuid() === null) {
                     $sender->sendMessage(TextFormat::RED . 'Player ' . $name . ' not is online');
 
@@ -88,6 +92,8 @@ final class InviteArgument extends Argument {
                 $sender->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'You have successfully invited ' . TextFormat::GOLD . $inviteResponse->getKnownName());
             },
             function (EmptyResponse $response) use ($sender): void {
+                PartiesService::getInstance()->removePlayerRequest($sender->getXuid());
+
                 $sender->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . 'Failed to invite player');
                 $sender->sendMessage(TextFormat::RED . $response->getMessage());
             }

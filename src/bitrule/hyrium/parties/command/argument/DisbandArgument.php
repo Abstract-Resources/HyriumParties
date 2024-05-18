@@ -36,12 +36,18 @@ final class DisbandArgument extends Argument {
             return;
         }
 
+        PartiesService::getInstance()->addPlayerRequest($sender->getXuid());
+
         PartiesService::getInstance()->postDelete(
             $party->getId(),
-            function (PongResponse $response) use ($party, $sender): void {
+            function (PongResponse $response) use ($sender): void {
+                PartiesService::getInstance()->removePlayerRequest($sender->getXuid());
+
                 $sender->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'Your party has been successfully disbanded!');
             },
             function (EmptyResponse $response) use ($sender): void {
+                PartiesService::getInstance()->removePlayerRequest($sender->getXuid());
+
                 $sender->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . 'Failed to disband the party');
                 $sender->sendMessage(TextFormat::RED . $response->getMessage());
             }

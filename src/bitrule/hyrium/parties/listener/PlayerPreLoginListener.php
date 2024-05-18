@@ -40,6 +40,8 @@ final class PlayerPreLoginListener implements Listener {
                 PartiesService::getInstance()->cache($party);
 
                 foreach ($party->getMembers() as $member) {
+                    if (!$member->hasJoined()) continue; // Skip the member if they haven't joined
+
                     PartiesService::getInstance()->cacheMember($member->getXuid(), $party->getId());
                 }
             },
