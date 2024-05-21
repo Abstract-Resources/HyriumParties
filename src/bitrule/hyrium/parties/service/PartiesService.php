@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace bitrule\hyrium\parties\service;
 
-use bitrule\hyrium\parties\object\Member;
-use bitrule\hyrium\parties\object\Party;
-use bitrule\hyrium\parties\object\response\PartyInviteResponse;
-use bitrule\hyrium\parties\PartiesPlugin;
+use bitrule\hyrium\parties\HyriumParties;
+use bitrule\hyrium\parties\service\response\InviteResponse;
+use bitrule\parties\object\Member;
+use bitrule\parties\object\Party;
+use bitrule\parties\PartiesPlugin;
 use bitrule\services\response\EmptyResponse;
 use bitrule\services\response\PongResponse;
 use bitrule\services\Service;
@@ -15,7 +16,6 @@ use Closure;
 use Exception;
 use libasynCurl\Curl;
 use pocketmine\utils\InternetRequestResult;
-use pocketmine\utils\SingletonTrait;
 use function array_search;
 use function in_array;
 use function is_array;
@@ -24,82 +24,13 @@ use function microtime;
 use function strtoupper;
 
 final class PartiesService {
-    use SingletonTrait {
-        setInstance as private;
-        reset as private;
-    }
 
-    /**
-     * All parties on this server
-     *
-     * @var array<string, Party>
-     */
-    private array $parties = [];
-    /**
-     * The id of the party that the player is in
-     * @var array<string, string>
-     */
-    private array $playersParties = [];
     /**
      * Cache the players than sent an update request
      *
      * @var string[]
      */
     private array $playersPendingRequest = [];
-
-    /**
-     * Get the party by a member
-     * First search the party id by the member xuid
-     * And then get the party by the party id
-     *
-     * @param string $xuid
-     *
-     * @return Party|null
-     */
-    public function getPartyByPlayer(string $xuid): ?Party {
-        $partyId = $this->playersParties[$xuid] ?? null;
-        if ($partyId === null) return null;
-
-        return $this->parties[$partyId] ?? null;
-    }
-
-    /**
-     * @param string $id
-     *
-     * @return Party|null
-     */
-    public function getPartyById(string $id): ?Party {
-        return $this->parties[$id] ?? null;
-    }
-
-    /**
-     * @param Party $party
-     */
-    public function cache(Party $party): void {
-        $this->parties[$party->getId()] = $party;
-    }
-
-    /**
-     * @param string $id
-     */
-    public function remove(string $id): void {
-        unset($this->parties[$id]);
-    }
-
-    /**
-     * @param string $xuid
-     * @param string $partyId
-     */
-    public function cacheMember(string $xuid, string $partyId): void {
-        $this->playersParties[$xuid] = $partyId;
-    }
-
-    /**
-     * @param string $xuid
-     */
-    public function removeMember(string $xuid): void {
-        unset($this->playersParties[$xuid]);
-    }
 
     /**
      * @param string $xuid
@@ -142,13 +73,6 @@ final class PartiesService {
             return;
         }
 
-        $party = $this->getPartyByPlayer($xuid);
-        if ($party !== null) {
-            $onCompletion($party);
-
-            return;
-        }
-
         Curl::getRequest(
             Service::URL . '/parties?xuid=' . $xuid,
             10,
@@ -173,17 +97,13 @@ final class PartiesService {
                 $code = $result->getCode();
                 if ($code === Service::CODE_OK) {
                     try {
-                        $onCompletion(Party::fromArray($body));
+                        $onCompletion(HyriumParties::wrapParty($body));
                     } catch (Exception $e) {
                         $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'Failed to parse party'));
 
                         PartiesPlugin::getInstance()->getLogger()->error('Failed to parse party: ' . $e->getMessage());
                     }
-
-                    return;
-                }
-
-                if (!isset($body['message'])) {
+                } elseif (!isset($body['message'])) {
                     $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body message'));
                 } elseif ($code === Service::CODE_NOT_FOUND) {
                     $onFail(EmptyResponse::create(Service::CODE_NOT_FOUND, 'Party not found'));
@@ -213,7 +133,7 @@ final class PartiesService {
         $initialTimestamp = microtime(true);
 
         Curl::postRequest(
-            Service::URL . '/parties?xuid=' . $member->getXuid() . '&role=' . strtoupper($member->getRole()->name) . '&id=' . $partyId,
+            Service::URL . '/parties/' . $partyId . '/joined?xuid=' . $member->getXuid() . '&role=' . strtoupper($member->getRole()->name),
             [],
             10,
             Service::defaultHeaders(),
@@ -251,10 +171,10 @@ final class PartiesService {
     }
 
     /**
-     * @param string  $name
-     * @param string  $partyId
-     * @param Closure(PartyInviteResponse): void $onCompletion
-     * @param Closure(EmptyResponse): void $onFail
+     * @param string                        $name
+     * @param string                        $partyId
+     * @param Closure(InviteResponse): void $onCompletion
+     * @param Closure(EmptyResponse): void  $onFail
      */
     public function postPlayerInvite(string $name, string $partyId, Closure $onCompletion, Closure $onFail): void {
         if (!Service::getInstance()->isRunning()) {
@@ -267,7 +187,7 @@ final class PartiesService {
         }
 
         Curl::postRequest(
-            Service::URL . '/parties/invite?name=' . $name . '&id=' . $partyId,
+            Service::URL . '/parties/' . $partyId . '/invite?name=' . $name,
             [],
             10,
             Service::defaultHeaders(),
@@ -296,13 +216,71 @@ final class PartiesService {
                         return;
                     }
 
-                    $onCompletion(new PartyInviteResponse(
+                    $onCompletion(new InviteResponse(
                         $body['xuid'],
                         $body['known_name'],
                         $body['invited']
                     ));
                 } elseif (!isset($body['message'])) {
                     $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body message'));
+                } else {
+                    $onFail(EmptyResponse::create($code, $body['message']));
+                }
+            }
+        );
+    }
+
+    /**
+     * @param string  $sourceXuid
+     * @param string  $targetName
+     * @param Closure(Party): void $onCompletion
+     * @param Closure(EmptyResponse): void $onFail
+     */
+    public function postPlayerAccept(string $sourceXuid, string $targetName, Closure $onCompletion, Closure $onFail): void {
+        if (!Service::getInstance()->isRunning()) {
+            $onFail(EmptyResponse::create(
+                Service::CODE_INTERNAL_SERVER_ERROR,
+                'Service is not running'
+            ));
+
+            return;
+        }
+
+        Curl::postRequest(
+            Service::URL . '/parties/' . $targetName . '/accept?xuid=' . $sourceXuid,
+            [],
+            10,
+            Service::defaultHeaders(),
+            function (?InternetRequestResult $result) use ($onCompletion, $onFail): void {
+                if ($result === null) {
+                    $onFail(EmptyResponse::create(
+                        Service::CODE_INTERNAL_SERVER_ERROR,
+                        'Invite request failed'
+                    ));
+
+                    return;
+                }
+
+                $body = json_decode($result->getBody(), true);
+                if (!is_array($body)) {
+                    $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body response'));
+
+                    return;
+                }
+
+                $code = $result->getCode();
+                if ($code === Service::CODE_OK) {
+                    try {
+                        $onCompletion(HyriumParties::wrapParty($body));
+                    } catch (Exception $e) {
+                        $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'Failed to parse party'));
+
+                        PartiesPlugin::getInstance()->getLogger()->error('Failed to parse party: ' . $e->getMessage());
+                    }
+                } elseif (!isset($body['message'])) {
+                    $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body message'));
+                } elseif ($code === Service::CODE_NOT_FOUND) {
+                    $onFail(EmptyResponse::create(Service::CODE_NOT_FOUND, 'Player not found'));
                 } else {
                     $onFail(EmptyResponse::create($code, $body['message']));
                 }
@@ -328,7 +306,7 @@ final class PartiesService {
         $initialTimestamp = microtime(true);
 
         Curl::deleteRequest(
-            Service::URL . '/parties/' . $partyId,
+            Service::URL . '/parties/' . $partyId . '/delete',
             [],
             10,
             Service::defaultHeaders(),

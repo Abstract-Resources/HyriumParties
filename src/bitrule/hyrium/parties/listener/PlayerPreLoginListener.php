@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace bitrule\hyrium\parties\listener;
 
-use bitrule\hyrium\parties\object\Party;
-use bitrule\hyrium\parties\PartiesPlugin;
-use bitrule\hyrium\parties\service\PartiesService;
-use bitrule\services\response\EmptyResponse;
-use bitrule\services\Service;
+use bitrule\hyrium\parties\adapter\HyriumPartyAdapter;
+use bitrule\parties\PartiesPlugin;
 use InvalidArgumentException;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerPreLoginEvent;
 use pocketmine\player\XboxLivePlayerInfo;
 use pocketmine\utils\TextFormat;
+use RuntimeException;
 
 final class PlayerPreLoginListener implements Listener {
 
@@ -28,31 +26,15 @@ final class PlayerPreLoginListener implements Listener {
             throw new InvalidArgumentException('PlayerInfo must be XboxLivePlayerInfo');
         }
 
-        if (PartiesService::getInstance()->getPartyByPlayer($playerInfo->getXuid()) !== null) {
-            PartiesPlugin::getInstance()->getLogger()->info(TextFormat::GREEN . 'Party for ' . $playerInfo->getXuid() . ' already loaded!');
-
-            return;
+        $partyAdapter = PartiesPlugin::getInstance()->getPartyAdapter();
+        if (!$partyAdapter instanceof HyriumPartyAdapter) {
+            throw new RuntimeException('Party adapter is not an instance of HyriumPartyAdapter');
         }
 
-        PartiesService::getInstance()->fetch(
-            $playerInfo->getXuid(),
-            function (Party $party): void {
-                PartiesService::getInstance()->cache($party);
-
-                foreach ($party->getMembers() as $member) {
-                    if (!$member->hasJoined()) continue; // Skip the member if they haven't joined
-
-                    PartiesService::getInstance()->cacheMember($member->getXuid(), $party->getId());
-                }
-            },
-            function (EmptyResponse $response) use ($playerInfo): void {
-                if ($response->getMessage() === 'Party not found') return;
-
-                PartiesPlugin::getInstance()->getLogger()->error('Failed to fetch party for ' . $playerInfo->getXuid());
-                PartiesPlugin::getInstance()->getLogger()->error($response->getMessage());
-
-                Service::getInstance()->addFailedRequest($playerInfo->getXuid());
-            }
-        );
+        if ($partyAdapter->getPartyByPlayer($playerInfo->getXuid()) !== null) {
+            PartiesPlugin::getInstance()->getLogger()->info(TextFormat::GREEN . 'Party for ' . $playerInfo->getXuid() . ' already loaded!');
+        } else {
+            $partyAdapter->loadParty($playerInfo->getXuid());
+        }
     }
 }
