@@ -169,12 +169,12 @@ final class PartiesService {
     }
 
     /**
-     * @param string                        $name
+     * @param string                        $targetName
      * @param string                        $partyId
      * @param Closure(InviteResponse): void $onCompletion
      * @param Closure(EmptyResponse): void  $onFail
      */
-    public function postPlayerInvite(string $name, string $partyId, Closure $onCompletion, Closure $onFail): void {
+    public function postPlayerInvite(string $targetName, string $partyId, Closure $onCompletion, Closure $onFail): void {
         if (!Service::getInstance()->isRunning()) {
             $onFail(EmptyResponse::create(
                 Service::CODE_INTERNAL_SERVER_ERROR,
@@ -185,7 +185,7 @@ final class PartiesService {
         }
 
         Curl::postRequest(
-            Service::URL . '/parties/' . $partyId . '/invite/' . $name,
+            Service::URL . '/parties/' . $partyId . '/invite/' . $targetName,
             [],
             10,
             Service::defaultHeaders(),
