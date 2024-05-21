@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace bitrule\hyrium\parties\adapter;
 
+use bitrule\hyrium\parties\listener\PlayerPreLoginListener;
 use bitrule\hyrium\parties\service\PartiesService;
+use bitrule\hyrium\parties\service\protocol\PartyNetworkDisbandedPacket;
+use bitrule\hyrium\parties\service\protocol\PartyNetworkInvitedPacket;
 use bitrule\hyrium\parties\service\response\InviteResponse;
 use bitrule\parties\adapter\PartyAdapter;
 use bitrule\parties\object\impl\MemberImpl;
@@ -15,7 +18,9 @@ use bitrule\parties\PartiesPlugin;
 use bitrule\services\response\EmptyResponse;
 use bitrule\services\response\PongResponse;
 use bitrule\services\Service;
+use InvalidArgumentException;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
 use pocketmine\utils\TextFormat;
 use Ramsey\Uuid\Uuid;
@@ -26,6 +31,20 @@ final class HyriumPartyAdapter extends PartyAdapter {
      * @param PartiesService $service
      */
     public function __construct(private readonly PartiesService $service) {}
+
+    /**
+     * @param PluginBase $plugin
+     *
+     * @return self
+     */
+    public static function create(PluginBase $plugin): self {
+        Service::getInstance()->registerPacket(new PartyNetworkDisbandedPacket());
+        Service::getInstance()->registerPacket(new PartyNetworkInvitedPacket());
+
+        Server::getInstance()->getPluginManager()->registerEvents(new PlayerPreLoginListener(), $plugin);
+
+        return new self(new PartiesService());
+    }
 
     /**
      * Adapt the method to create a party.
@@ -291,5 +310,35 @@ final class HyriumPartyAdapter extends PartyAdapter {
                 }
             );
         }
+    }
+
+    /**
+     * @param array $data
+     *
+     * @return Party
+     */
+    public static function wrapParty(array $data): Party {
+        if (!isset($data['id'])) {
+            throw new InvalidArgumentException('Party id is not set');
+        }
+
+        if (!isset($data['open'])) {
+            throw new InvalidArgumentException('Party open is not set');
+        }
+
+        if (!isset($data['members'])) {
+            throw new InvalidArgumentException('Party members is not set');
+        }
+
+        if (!isset($data['pending_invites'])) {
+            throw new InvalidArgumentException('Party pending invites is not set');
+        }
+
+        return new PartyImpl(
+            $data['id'],
+            $data['open'],
+            array_map(fn(array $memberData) => MemberImpl::fromArray($memberData), $data['members']),
+            $data['pending_invites']
+        );
     }
 }

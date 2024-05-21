@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace bitrule\hyrium\parties\service;
 
-use bitrule\hyrium\parties\HyriumParties;
+use bitrule\hyrium\parties\adapter\HyriumPartyAdapter;
 use bitrule\hyrium\parties\service\response\InviteResponse;
-use bitrule\parties\object\Member;
 use bitrule\parties\object\Party;
 use bitrule\parties\PartiesPlugin;
 use bitrule\services\response\EmptyResponse;
@@ -21,7 +20,6 @@ use function in_array;
 use function is_array;
 use function json_decode;
 use function microtime;
-use function strtoupper;
 
 final class PartiesService {
 
@@ -97,7 +95,7 @@ final class PartiesService {
                 $code = $result->getCode();
                 if ($code === Service::CODE_OK) {
                     try {
-                        $onCompletion(HyriumParties::wrapParty($body));
+                        $onCompletion(HyriumPartyAdapter::wrapParty($body));
                     } catch (Exception $e) {
                         $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'Failed to parse party'));
 
@@ -271,7 +269,7 @@ final class PartiesService {
                 $code = $result->getCode();
                 if ($code === Service::CODE_OK) {
                     try {
-                        $onCompletion(HyriumParties::wrapParty($body));
+                        $onCompletion(HyriumPartyAdapter::wrapParty($body));
                     } catch (Exception $e) {
                         $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'Failed to parse party'));
 
