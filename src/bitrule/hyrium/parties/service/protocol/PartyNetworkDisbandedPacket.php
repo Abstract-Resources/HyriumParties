@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace bitrule\hyrium\parties\service\protocol;
 
 use bitrule\hyrium\parties\adapter\HyriumPartyAdapter;
-use bitrule\parties\MainPlugin;
+use bitrule\parties\PartiesPlugin;
 use bitrule\services\broker\AbstractPacket;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use RuntimeException;
@@ -34,7 +34,7 @@ final class PartyNetworkDisbandedPacket extends AbstractPacket {
             throw new RuntimeException('Party id is null');
         }
 
-        $partyAdapter = MainPlugin::getInstance()->getPartyAdapter();
+        $partyAdapter = PartiesPlugin::getInstance()->getPartyAdapter();
         if (!$partyAdapter instanceof HyriumPartyAdapter) {
             throw new RuntimeException('Party adapter is not an instance of HyriumPartyAdapter');
         }

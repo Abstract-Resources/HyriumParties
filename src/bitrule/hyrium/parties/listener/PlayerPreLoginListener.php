@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace bitrule\hyrium\parties\listener;
 
 use bitrule\hyrium\parties\adapter\HyriumPartyAdapter;
-use bitrule\hyrium\parties\HyriumParties;
-use bitrule\parties\MainPlugin;
+use bitrule\parties\PartiesPlugin;
 use InvalidArgumentException;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerPreLoginEvent;
@@ -27,13 +26,13 @@ final class PlayerPreLoginListener implements Listener {
             throw new InvalidArgumentException('PlayerInfo must be XboxLivePlayerInfo');
         }
 
-        $partyAdapter = MainPlugin::getInstance()->getPartyAdapter();
+        $partyAdapter = PartiesPlugin::getInstance()->getPartyAdapter();
         if (!$partyAdapter instanceof HyriumPartyAdapter) {
             throw new RuntimeException('Party adapter is not an instance of HyriumPartyAdapter');
         }
 
         if ($partyAdapter->getPartyByPlayer($playerInfo->getXuid()) !== null) {
-            HyriumParties::getInstance()->getLogger()->info(TextFormat::GREEN . 'Party for ' . $playerInfo->getXuid() . ' already loaded!');
+            PartiesPlugin::getInstance()->getLogger()->info(TextFormat::GREEN . 'Party for ' . $playerInfo->getXuid() . ' already loaded!');
         } else {
             $partyAdapter->loadParty($playerInfo->getXuid());
         }

@@ -5,10 +5,6 @@ declare(strict_types=1);
 namespace bitrule\hyrium\parties\service\protocol;
 
 use bitrule\hyrium\parties\adapter\HyriumPartyAdapter;
-use bitrule\hyrium\parties\HyriumParties;
-use bitrule\parties\MainPlugin;
-use bitrule\parties\object\impl\MemberImpl;
-use bitrule\parties\object\Role;
 use bitrule\parties\PartiesPlugin;
 use bitrule\services\broker\AbstractPacket;
 use bitrule\services\Service;
@@ -55,7 +51,7 @@ final class PartyNetworkInvitedPacket extends AbstractPacket {
             throw new RuntimeException('Player name is null');
         }
 
-        $partyAdapter = MainPlugin::getInstance()->getPartyAdapter();
+        $partyAdapter = PartiesPlugin::getInstance()->getPartyAdapter();
         if (!$partyAdapter instanceof HyriumPartyAdapter) {
             throw new RuntimeException('Party adapter is not an instance of HyriumPartyAdapter');
         }

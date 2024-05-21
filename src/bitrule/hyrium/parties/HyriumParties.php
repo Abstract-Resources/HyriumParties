@@ -16,6 +16,7 @@ use InvalidArgumentException;
 use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
 use pocketmine\utils\SingletonTrait;
+use function array_map;
 
 final class HyriumParties {
     use SingletonTrait {
