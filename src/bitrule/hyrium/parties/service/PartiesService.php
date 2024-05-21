@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace bitrule\hyrium\parties\service;
 
-use bitrule\hyrium\parties\object\Member;
-use bitrule\hyrium\parties\object\Party;
-use bitrule\hyrium\parties\object\response\PartyInviteResponse;
 use bitrule\hyrium\parties\PartiesPlugin;
+use bitrule\hyrium\parties\service\response\PartyInviteResponse;
+use bitrule\parties\object\Member;
+use bitrule\parties\object\Party;
 use bitrule\services\response\EmptyResponse;
 use bitrule\services\response\PongResponse;
 use bitrule\services\Service;
@@ -15,7 +15,6 @@ use Closure;
 use Exception;
 use libasynCurl\Curl;
 use pocketmine\utils\InternetRequestResult;
-use pocketmine\utils\SingletonTrait;
 use function array_search;
 use function in_array;
 use function is_array;
@@ -24,82 +23,13 @@ use function microtime;
 use function strtoupper;
 
 final class PartiesService {
-    use SingletonTrait {
-        setInstance as private;
-        reset as private;
-    }
 
-    /**
-     * All parties on this server
-     *
-     * @var array<string, Party>
-     */
-    private array $parties = [];
-    /**
-     * The id of the party that the player is in
-     * @var array<string, string>
-     */
-    private array $playersParties = [];
     /**
      * Cache the players than sent an update request
      *
      * @var string[]
      */
     private array $playersPendingRequest = [];
-
-    /**
-     * Get the party by a member
-     * First search the party id by the member xuid
-     * And then get the party by the party id
-     *
-     * @param string $xuid
-     *
-     * @return Party|null
-     */
-    public function getPartyByPlayer(string $xuid): ?Party {
-        $partyId = $this->playersParties[$xuid] ?? null;
-        if ($partyId === null) return null;
-
-        return $this->parties[$partyId] ?? null;
-    }
-
-    /**
-     * @param string $id
-     *
-     * @return Party|null
-     */
-    public function getPartyById(string $id): ?Party {
-        return $this->parties[$id] ?? null;
-    }
-
-    /**
-     * @param Party $party
-     */
-    public function cache(Party $party): void {
-        $this->parties[$party->getId()] = $party;
-    }
-
-    /**
-     * @param string $id
-     */
-    public function remove(string $id): void {
-        unset($this->parties[$id]);
-    }
-
-    /**
-     * @param string $xuid
-     * @param string $partyId
-     */
-    public function cacheMember(string $xuid, string $partyId): void {
-        $this->playersParties[$xuid] = $partyId;
-    }
-
-    /**
-     * @param string $xuid
-     */
-    public function removeMember(string $xuid): void {
-        unset($this->playersParties[$xuid]);
-    }
 
     /**
      * @param string $xuid

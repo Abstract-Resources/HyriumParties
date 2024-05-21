@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace bitrule\hyrium\parties\service\protocol;
 
-use bitrule\hyrium\parties\object\Member;
-use bitrule\hyrium\parties\object\Role;
+use bitrule\hyrium\parties\adapter\HyriumPartyAdapter;
 use bitrule\hyrium\parties\PartiesPlugin;
-use bitrule\hyrium\parties\service\PartiesService;
+use bitrule\parties\MainPlugin;
+use bitrule\parties\object\impl\MemberImpl;
+use bitrule\parties\object\Role;
 use bitrule\services\broker\AbstractPacket;
 use bitrule\services\Service;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
@@ -53,13 +54,18 @@ final class PartyNetworkInvitedPacket extends AbstractPacket {
             throw new RuntimeException('Player name is null');
         }
 
-        $party = PartiesService::getInstance()->getPartyById($this->id);
+        $partyAdapter = MainPlugin::getInstance()->getPartyAdapter();
+        if (!$partyAdapter instanceof HyriumPartyAdapter) {
+            throw new RuntimeException('Party adapter is not an instance of HyriumPartyAdapter');
+        }
+
+        $party = $partyAdapter->getPartyById($this->id);
         if ($party === null) return;
 
         // Add the player to the party because this prevents have an outdated party
         // an example is if the ownership joins to a server where the party is already created
         // and the party is outdated, they will be able to invite the player again
-        $party->addMember(new Member(
+        $party->addMember(new MemberImpl(
             $this->playerXuid,
             $this->playerName,
             Role::MEMBER
@@ -67,8 +73,6 @@ final class PartyNetworkInvitedPacket extends AbstractPacket {
 
         $disbandedMessage = PartiesPlugin::prefix() . TextFormat::YELLOW . $party->getOwnership()->getName() . TextFormat::GOLD . ' has invited ' . TextFormat::YELLOW . $this->playerName . TextFormat::GOLD . ' to the party!';
         foreach ($party->getMembers() as $member) {
-            if (!$member->hasJoined()) continue; // Skip the member if they haven't joined
-
             $playerObject = Service::getInstance()->getPlayerObject($member->getXuid());
             if ($playerObject === null || !$playerObject->isOnline()) continue;
 

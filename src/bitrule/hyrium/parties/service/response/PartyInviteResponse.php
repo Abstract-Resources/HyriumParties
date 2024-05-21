@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace bitrule\hyrium\parties\object\response;
+namespace bitrule\hyrium\parties\service\response;
 
 final class PartyInviteResponse {
 

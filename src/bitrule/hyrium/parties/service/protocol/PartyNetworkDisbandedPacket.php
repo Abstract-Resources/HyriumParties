@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace bitrule\hyrium\parties\service\protocol;
 
+use bitrule\hyrium\parties\adapter\HyriumPartyAdapter;
 use bitrule\hyrium\parties\PartiesPlugin;
 use bitrule\hyrium\parties\service\PartiesService;
+use bitrule\parties\MainPlugin;
 use bitrule\services\broker\AbstractPacket;
 use bitrule\services\Service;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
@@ -36,21 +38,14 @@ final class PartyNetworkDisbandedPacket extends AbstractPacket {
             throw new RuntimeException('Party id is null');
         }
 
-        $party = PartiesService::getInstance()->getPartyById($this->id);
+        $partyAdapter = MainPlugin::getInstance()->getPartyAdapter();
+        if (!$partyAdapter instanceof HyriumPartyAdapter) {
+            throw new RuntimeException('Party adapter is not an instance of HyriumPartyAdapter');
+        }
+
+        $party = $partyAdapter->getPartyById($this->id);
         if ($party === null) return;
 
-        PartiesService::getInstance()->remove($this->id);
-
-        $disbandedMessage = PartiesPlugin::prefix() . TextFormat::YELLOW . $party->getOwnership()->getName() . TextFormat::GOLD . ' has disbanded the party!';
-        foreach ($party->getMembers() as $member) {
-            if (!$member->hasJoined()) continue; // Skip the member if they haven't joined
-
-            PartiesService::getInstance()->removeMember($member->getXuid());
-
-            $playerObject = Service::getInstance()->getPlayerObject($member->getXuid());
-            if ($playerObject === null || !$playerObject->isOnline()) continue;
-
-            $playerObject->sendMessage($disbandedMessage);
-        }
+        $partyAdapter->postDisbandParty($party);
     }
 }

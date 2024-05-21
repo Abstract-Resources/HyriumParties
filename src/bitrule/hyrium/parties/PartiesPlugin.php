@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace bitrule\hyrium\parties;
 
+use bitrule\hyrium\parties\service\PartiesService;
 use bitrule\hyrium\parties\service\protocol\PartyNetworkDisbandedPacket;
 use bitrule\hyrium\parties\service\protocol\PartyNetworkInvitedPacket;
+use bitrule\parties\MainPlugin;
 use bitrule\services\Service;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\SingletonTrait;
@@ -22,6 +24,8 @@ final class PartiesPlugin extends PluginBase {
     }
 
     public function onEnable(): void {
+        MainPlugin::getInstance()->setPartyAdapter(new adapter\HyriumPartyAdapter(new PartiesService()));
+
         Service::getInstance()->registerPacket(new PartyNetworkDisbandedPacket());
         Service::getInstance()->registerPacket(new PartyNetworkInvitedPacket());
 
