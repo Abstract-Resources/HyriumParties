@@ -34,10 +34,8 @@ final class PlayerPreLoginListener implements Listener {
 
         if ($partyAdapter->getPartyByPlayer($playerInfo->getXuid()) !== null) {
             PartiesPlugin::getInstance()->getLogger()->info(TextFormat::GREEN . 'Party for ' . $playerInfo->getXuid() . ' already loaded!');
-
-            return;
+        } else {
+            $partyAdapter->loadParty($playerInfo->getXuid());
         }
-
-        $partyAdapter->fetchParty($playerInfo->getXuid());
     }
 }

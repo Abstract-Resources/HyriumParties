@@ -65,11 +65,7 @@ final class PartyNetworkInvitedPacket extends AbstractPacket {
         // Add the player to the party because this prevents have an outdated party
         // an example is if the ownership joins to a server where the party is already created
         // and the party is outdated, they will be able to invite the player again
-        $party->addMember(new MemberImpl(
-            $this->playerXuid,
-            $this->playerName,
-            Role::MEMBER
-        ));
+        $party->addPendingInvite($this->playerXuid);
 
         $disbandedMessage = PartiesPlugin::prefix() . TextFormat::YELLOW . $party->getOwnership()->getName() . TextFormat::GOLD . ' has invited ' . TextFormat::YELLOW . $this->playerName . TextFormat::GOLD . ' to the party!';
         foreach ($party->getMembers() as $member) {

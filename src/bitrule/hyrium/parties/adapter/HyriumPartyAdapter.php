@@ -113,8 +113,6 @@ final class HyriumPartyAdapter extends PartyAdapter {
 
                 $party->addPendingInvite($inviteResponse->getXuid());
 
-                $this->cacheMember($inviteResponse->getXuid(), $party->getId());
-
                 $source->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'You have successfully invited ' . TextFormat::GOLD . $inviteResponse->getKnownName());
             },
             function (EmptyResponse $response) use ($source): void {
@@ -223,13 +221,51 @@ final class HyriumPartyAdapter extends PartyAdapter {
      * @param Player $source
      */
     public function onPlayerQuit(Player $source): void {
-        // TODO: Implement onPlayerQuit() method.
+        $party = $this->getPartyByPlayer($source->getXuid());
+        if ($party === null) return;
+
+        $membersOnline = 0;
+        foreach ($party->getMembers() as $member) {
+            if ($member->getXuid() === $source->getXuid()) continue;
+
+            $playerObject = Service::getInstance()->getPlayerObject($member->getXuid());
+            if ($playerObject === null || !$playerObject->isOnline()) continue;
+
+            $membersOnline++;
+        }
+
+        if ($membersOnline > 0) return;
+
+        // No members online
+        // So we're going to clear the cache and remove the party
+        // Only from this server to prevent memory leak or outdated data
+        // A subserver cannot delete a party from the global cache
+        // Well, it can, but only when the party is disbanded
+
+        PartiesPlugin::getInstance()->getLogger()->info(TextFormat::BLUE . 'The party ' . $party->getOwnership()->getName() . ' has been disbanded because no members are online on this server');
+
+        foreach ($party->getMembers() as $member) {
+            $this->clearMember($member->getXuid());
+        }
+
+        $this->remove($party->getId());
     }
 
     /**
      * @param string $sourceXuid
      */
-    public function fetchParty(string $sourceXuid): void {
+    public function loadParty(string $sourceXuid): void {
+        // I think this going to be an issue when many players from the same party join at the same time
+        // Because the party is going to be fetched multiple times
+        // Maybe the solution is sending a packet of redis to the new server when a player request change his source server
+        // So the new server can fetch the party and cache the party before the player joins
+
+        // Another solution is caching the party id fetched the last time
+        // So if many members request the party at the same time, no sent any data to the server if his party is the same
+        // and the server has the party fetched the last 5 seconds
+        // Because the party was requested before his on the same server
+        // So the request going to be more fast because the response is only a message, non the party data
+
         $onCompletion = function (Party $party): void {
             $this->cache($party);
 
