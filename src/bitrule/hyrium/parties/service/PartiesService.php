@@ -72,13 +72,6 @@ final class PartiesService {
             return;
         }
 
-        $party = $this->getPartyByPlayer($xuid);
-        if ($party !== null) {
-            $onCompletion($party);
-
-            return;
-        }
-
         Curl::getRequest(
             Service::URL . '/parties?xuid=' . $xuid,
             10,
@@ -143,7 +136,7 @@ final class PartiesService {
         $initialTimestamp = microtime(true);
 
         Curl::postRequest(
-            Service::URL . '/parties?xuid=' . $member->getXuid() . '&role=' . strtoupper($member->getRole()->name) . '&id=' . $partyId,
+            Service::URL . '/parties/' . $partyId . '/joined?xuid=' . $member->getXuid() . '&role=' . strtoupper($member->getRole()->name),
             [],
             10,
             Service::defaultHeaders(),
@@ -197,7 +190,7 @@ final class PartiesService {
         }
 
         Curl::postRequest(
-            Service::URL . '/parties/invite?name=' . $name . '&id=' . $partyId,
+            Service::URL . '/parties/' . $partyId . '/invite?name=' . $name,
             [],
             10,
             Service::defaultHeaders(),
@@ -258,7 +251,7 @@ final class PartiesService {
         $initialTimestamp = microtime(true);
 
         Curl::deleteRequest(
-            Service::URL . '/parties/' . $partyId,
+            Service::URL . '/parties/' . $partyId . '/delete',
             [],
             10,
             Service::defaultHeaders(),

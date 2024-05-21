@@ -22,7 +22,10 @@ use Ramsey\Uuid\Uuid;
 
 final class HyriumPartyAdapter extends PartyAdapter {
 
-    public function __construct(private PartiesService $service) {}
+    /**
+     * @param PartiesService $service
+     */
+    public function __construct(private readonly PartiesService $service) {}
 
     /**
      * Adapt the method to create a party.
@@ -182,24 +185,34 @@ final class HyriumPartyAdapter extends PartyAdapter {
         // TODO: Implement onPlayerQuit() method.
     }
 
+    /**
+     * @param string $sourceXuid
+     */
     public function fetchParty(string $sourceXuid): void {
-        $this->service->fetch(
-            $sourceXuid,
-            function (Party $party): void {
-                $this->cache($party);
+        $onCompletion = function (Party $party): void {
+            $this->cache($party);
 
-                foreach ($party->getMembers() as $member) {
-                    $this->cacheMember($member->getXuid(), $party->getId());
-                }
-            },
-            function (EmptyResponse $response) use ($sourceXuid): void {
-                if ($response->getMessage() === 'Party not found') return;
-
-                PartiesPlugin::getInstance()->getLogger()->error('Failed to fetch party for ' . $sourceXuid);
-                PartiesPlugin::getInstance()->getLogger()->error($response->getMessage());
-
-                Service::getInstance()->addFailedRequest($sourceXuid);
+            foreach ($party->getMembers() as $member) {
+                $this->cacheMember($member->getXuid(), $party->getId());
             }
-        );
+        };
+
+        $party = $this->getPartyByPlayer($sourceXuid);
+        if ($party !== null) {
+            $onCompletion($party);
+        } else {
+            $this->service->fetch(
+                $sourceXuid,
+                $onCompletion,
+                function (EmptyResponse $response) use ($sourceXuid): void {
+                    if ($response->getMessage() === 'Party not found') return;
+
+                    PartiesPlugin::getInstance()->getLogger()->error('Failed to fetch party for ' . $sourceXuid);
+                    PartiesPlugin::getInstance()->getLogger()->error($response->getMessage());
+
+                    Service::getInstance()->addFailedRequest($sourceXuid);
+                }
+            );
+        }
     }
 }
