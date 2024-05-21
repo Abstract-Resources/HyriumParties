@@ -57,7 +57,7 @@ final class CreateArgument extends Argument {
 
                 PartiesService::getInstance()->removePlayerRequest($sender->getXuid());
 
-                $sender->sendMessage(PartiesPlugin::prefix() . TextFormat::GOLD . 'You have successfully created a party!');
+                $sender->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'You have successfully created a party!');
             },
             function (EmptyResponse $response) use ($sender): void {
                 $sender->sendMessage(PartiesPlugin::prefix() . TextFormat::GOLD . 'Failed to create party');

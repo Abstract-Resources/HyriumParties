@@ -73,6 +73,11 @@ final class Member {
             throw new \InvalidArgumentException('Invalid data');
         }
 
-        return new Member($data['xuid'], $data['known_name'], Role::valueOf($data['role']));
+        return new Member(
+            $data['xuid'],
+            $data['known_name'],
+            Role::valueOf($data['role']),
+            $data['joined'] ?? false
+        );
     }
 }

@@ -16,13 +16,15 @@
     "pocketmine/pocketmine-mp": "^5.15.0",
     "nethergamesmc/libasyncurl": "dev-pm5",
     "abstract/command-framework": "^0.4",
-    "bitrule/gorufus": "dev-master"
+    "bitrule/gorufus": "dev-master",
+    "bitrule/parties": "dev-master"
   },
 
   "repositories": [
     {"type": "vcs", "url": "git@github.com:Abstract-Resources/command-framework"},
-    {"type": "vcs", "url": "git@github.com:Hyrium/Gorufus"},
     {"type": "vcs", "url": "git@github.com:aabstractt/PMMP-Forms"},
+    {"type": "vcs", "url": "git@github.com:aabstractt/Parties"},
+    {"type": "vcs", "url": "git@github.com:Hyrium/Gorufus"},
     { "type": "vcs", "url": "git@github.com:NetherGamesMC/libasynCurl.git" }
   ],
 
