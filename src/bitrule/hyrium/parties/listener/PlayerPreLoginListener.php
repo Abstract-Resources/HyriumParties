@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace bitrule\hyrium\parties\listener;
 
 use bitrule\hyrium\parties\adapter\HyriumPartyAdapter;
-use bitrule\hyrium\parties\PartiesPlugin;
+use bitrule\hyrium\parties\HyriumParties;
 use bitrule\parties\MainPlugin;
 use InvalidArgumentException;
 use pocketmine\event\Listener;
@@ -33,7 +33,7 @@ final class PlayerPreLoginListener implements Listener {
         }
 
         if ($partyAdapter->getPartyByPlayer($playerInfo->getXuid()) !== null) {
-            PartiesPlugin::getInstance()->getLogger()->info(TextFormat::GREEN . 'Party for ' . $playerInfo->getXuid() . ' already loaded!');
+            HyriumParties::getInstance()->getLogger()->info(TextFormat::GREEN . 'Party for ' . $playerInfo->getXuid() . ' already loaded!');
         } else {
             $partyAdapter->loadParty($playerInfo->getXuid());
         }

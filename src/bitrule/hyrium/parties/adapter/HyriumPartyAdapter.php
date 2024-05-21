@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace bitrule\hyrium\parties\adapter;
 
-use bitrule\hyrium\parties\PartiesPlugin;
 use bitrule\hyrium\parties\service\PartiesService;
 use bitrule\hyrium\parties\service\response\InviteResponse;
 use bitrule\parties\adapter\PartyAdapter;
@@ -12,6 +11,7 @@ use bitrule\parties\object\impl\MemberImpl;
 use bitrule\parties\object\impl\PartyImpl;
 use bitrule\parties\object\Party;
 use bitrule\parties\object\Role;
+use bitrule\parties\PartiesPlugin;
 use bitrule\services\response\EmptyResponse;
 use bitrule\services\response\PongResponse;
 use bitrule\services\Service;
@@ -69,7 +69,7 @@ final class HyriumPartyAdapter extends PartyAdapter {
      * @param string $playerName
      * @param Party  $party
      */
-    public function processInvitePlayer(Player $source, string $playerName, Party $party): void {
+    public function onPlayerInvite(Player $source, string $playerName, Party $party): void {
         if ($this->service->hasPlayerRequest($source->getXuid())) {
             $source->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . 'Please wait for the previous request to be processed');
 
@@ -128,7 +128,7 @@ final class HyriumPartyAdapter extends PartyAdapter {
      * @param Player $source
      * @param string $playerName
      */
-    public function processPlayerAccept(Player $source, string $playerName): void {
+    public function onPlayerAccept(Player $source, string $playerName): void {
         if ($this->service->hasPlayerRequest($source->getXuid())) {
             $source->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . 'Please wait for the previous request to be processed');
 
@@ -174,7 +174,7 @@ final class HyriumPartyAdapter extends PartyAdapter {
      * @param Player $target
      * @param Party  $party
      */
-    public function processKickPlayer(Player $source, Player $target, Party $party): void {
+    public function onPlayerKick(Player $source, Player $target, Party $party): void {
         // TODO: Implement processKickPlayer() method.
     }
 
@@ -182,7 +182,7 @@ final class HyriumPartyAdapter extends PartyAdapter {
      * @param Player $source
      * @param Party  $party
      */
-    public function processLeavePlayer(Player $source, Party $party): void {
+    public function onPlayerLeave(Player $source, Party $party): void {
         // TODO: Implement processLeavePlayer() method.
     }
 

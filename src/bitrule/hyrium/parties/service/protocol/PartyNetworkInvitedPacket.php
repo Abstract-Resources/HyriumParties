@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace bitrule\hyrium\parties\service\protocol;
 
 use bitrule\hyrium\parties\adapter\HyriumPartyAdapter;
-use bitrule\hyrium\parties\PartiesPlugin;
+use bitrule\hyrium\parties\HyriumParties;
 use bitrule\parties\MainPlugin;
 use bitrule\parties\object\impl\MemberImpl;
 use bitrule\parties\object\Role;
+use bitrule\parties\PartiesPlugin;
 use bitrule\services\broker\AbstractPacket;
 use bitrule\services\Service;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;

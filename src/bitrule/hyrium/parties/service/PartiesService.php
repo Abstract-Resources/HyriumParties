@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace bitrule\hyrium\parties\service;
 
-use bitrule\hyrium\parties\PartiesPlugin;
 use bitrule\hyrium\parties\service\response\InviteResponse;
 use bitrule\parties\object\Member;
 use bitrule\parties\object\Party;
+use bitrule\parties\PartiesPlugin;
 use bitrule\services\response\EmptyResponse;
 use bitrule\services\response\PongResponse;
 use bitrule\services\Service;
