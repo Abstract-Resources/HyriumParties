@@ -6,7 +6,7 @@ namespace bitrule\hyrium\parties\adapter;
 
 use bitrule\hyrium\parties\PartiesPlugin;
 use bitrule\hyrium\parties\service\PartiesService;
-use bitrule\hyrium\parties\service\response\PartyInviteResponse;
+use bitrule\hyrium\parties\service\response\InviteResponse;
 use bitrule\parties\adapter\PartyAdapter;
 use bitrule\parties\object\impl\MemberImpl;
 use bitrule\parties\object\impl\PartyImpl;
@@ -96,7 +96,7 @@ final class HyriumPartyAdapter extends PartyAdapter {
         $this->service->postPlayerInvite(
             $playerName,
             $party->getId(),
-            function (PartyInviteResponse $inviteResponse) use ($playerName, $source, $party): void {
+            function (InviteResponse $inviteResponse) use ($playerName, $source, $party): void {
                 $this->service->removePlayerRequest($source->getXuid());
 
                 if ($inviteResponse->getXuid() === null) {
@@ -111,11 +111,7 @@ final class HyriumPartyAdapter extends PartyAdapter {
                     return;
                 }
 
-                $party->addMember(new MemberImpl(
-                    $inviteResponse->getXuid(),
-                    $inviteResponse->getKnownName(),
-                    Role::MEMBER
-                ));
+                $party->addPendingInvite($inviteResponse->getXuid());
 
                 $this->cacheMember($inviteResponse->getXuid(), $party->getId());
 
@@ -126,6 +122,51 @@ final class HyriumPartyAdapter extends PartyAdapter {
 
                 $source->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . 'Failed to invite player');
                 $source->sendMessage(TextFormat::RED . $response->getMessage());
+            }
+        );
+    }
+
+    /**
+     * @param Player $source
+     * @param string $playerName
+     */
+    public function processPlayerAccept(Player $source, string $playerName): void {
+        if ($this->service->hasPlayerRequest($source->getXuid())) {
+            $source->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . 'Please wait for the previous request to be processed');
+
+            return;
+        }
+
+        $this->service->addPlayerRequest($source->getXuid());
+
+        $this->service->postPlayerAccept(
+            sourceXuid: $source->getXuid(),
+            targetName: $playerName,
+            onCompletion: function (Party $party) use ($source): void {
+                $this->service->removePlayerRequest($source->getXuid());
+
+                if (!$party->isMember($source->getXuid())) {
+                    $source->sendMessage(TextFormat::RED . $party->getOwnership()->getName() . ' has not invited you to the party');
+
+                    return;
+                }
+
+                $this->cache($party);
+                $this->cacheMember($source->getXuid(), $party->getId());
+
+                $source->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'You have successfully joined to the ' . TextFormat::GOLD . $party->getOwnership()->getName() . TextFormat::GREEN . '\'s party!');
+            },
+            onFail: function (EmptyResponse $response) use ($playerName, $source): void {
+                $this->service->removePlayerRequest($source->getXuid());
+
+                if ($response->getMessage() === 'Player not found') {
+                    $source->sendMessage(TextFormat::RED . $playerName . ' not is online');
+                } elseif ($response->getMessage() === 'Party not found') {
+                    $source->sendMessage(TextFormat::RED . $playerName . ' is not in a party');
+                } else {
+                    $source->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . 'Failed to accept the party invite');
+                    $source->sendMessage(TextFormat::RED . $response->getMessage());
+                }
             }
         );
     }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace bitrule\hyrium\parties\service\response;
 
-final class PartyInviteResponse {
+final class InviteResponse {
 
     /**
      * @param string|null $xuid

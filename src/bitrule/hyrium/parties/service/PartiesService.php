@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace bitrule\hyrium\parties\service;
 
 use bitrule\hyrium\parties\PartiesPlugin;
-use bitrule\hyrium\parties\service\response\PartyInviteResponse;
+use bitrule\hyrium\parties\service\response\InviteResponse;
 use bitrule\parties\object\Member;
 use bitrule\parties\object\Party;
 use bitrule\services\response\EmptyResponse;
@@ -102,11 +102,7 @@ final class PartiesService {
 
                         PartiesPlugin::getInstance()->getLogger()->error('Failed to parse party: ' . $e->getMessage());
                     }
-
-                    return;
-                }
-
-                if (!isset($body['message'])) {
+                } elseif (!isset($body['message'])) {
                     $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body message'));
                 } elseif ($code === Service::CODE_NOT_FOUND) {
                     $onFail(EmptyResponse::create(Service::CODE_NOT_FOUND, 'Party not found'));
@@ -174,10 +170,10 @@ final class PartiesService {
     }
 
     /**
-     * @param string  $name
-     * @param string  $partyId
-     * @param Closure(PartyInviteResponse): void $onCompletion
-     * @param Closure(EmptyResponse): void $onFail
+     * @param string                        $name
+     * @param string                        $partyId
+     * @param Closure(InviteResponse): void $onCompletion
+     * @param Closure(EmptyResponse): void  $onFail
      */
     public function postPlayerInvite(string $name, string $partyId, Closure $onCompletion, Closure $onFail): void {
         if (!Service::getInstance()->isRunning()) {
@@ -219,13 +215,71 @@ final class PartiesService {
                         return;
                     }
 
-                    $onCompletion(new PartyInviteResponse(
+                    $onCompletion(new InviteResponse(
                         $body['xuid'],
                         $body['known_name'],
                         $body['invited']
                     ));
                 } elseif (!isset($body['message'])) {
                     $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body message'));
+                } else {
+                    $onFail(EmptyResponse::create($code, $body['message']));
+                }
+            }
+        );
+    }
+
+    /**
+     * @param string  $sourceXuid
+     * @param string  $targetName
+     * @param Closure(Party): void $onCompletion
+     * @param Closure(EmptyResponse): void $onFail
+     */
+    public function postPlayerAccept(string $sourceXuid, string $targetName, Closure $onCompletion, Closure $onFail): void {
+        if (!Service::getInstance()->isRunning()) {
+            $onFail(EmptyResponse::create(
+                Service::CODE_INTERNAL_SERVER_ERROR,
+                'Service is not running'
+            ));
+
+            return;
+        }
+
+        Curl::postRequest(
+            Service::URL . '/parties/' . $targetName . '/accept?xuid=' . $sourceXuid,
+            [],
+            10,
+            Service::defaultHeaders(),
+            function (?InternetRequestResult $result) use ($onCompletion, $onFail): void {
+                if ($result === null) {
+                    $onFail(EmptyResponse::create(
+                        Service::CODE_INTERNAL_SERVER_ERROR,
+                        'Invite request failed'
+                    ));
+
+                    return;
+                }
+
+                $body = json_decode($result->getBody(), true);
+                if (!is_array($body)) {
+                    $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body response'));
+
+                    return;
+                }
+
+                $code = $result->getCode();
+                if ($code === Service::CODE_OK) {
+                    try {
+                        $onCompletion(Party::fromArray($body));
+                    } catch (Exception $e) {
+                        $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'Failed to parse party'));
+
+                        PartiesPlugin::getInstance()->getLogger()->error('Failed to parse party: ' . $e->getMessage());
+                    }
+                } elseif (!isset($body['message'])) {
+                    $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body message'));
+                } elseif ($code === Service::CODE_NOT_FOUND) {
+                    $onFail(EmptyResponse::create(Service::CODE_NOT_FOUND, 'Player not found'));
                 } else {
                     $onFail(EmptyResponse::create($code, $body['message']));
                 }
