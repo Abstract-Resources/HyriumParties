@@ -40,13 +40,13 @@ final class HyriumPartyAdapter extends PartyAdapter {
         }
 
         $party = new PartyImpl(Uuid::uuid4()->toString());
-        $party->addMember($member = new MemberImpl($source->getXuid(), $source->getName(), Role::OWNER));
+        $party->addMember(new MemberImpl($source->getXuid(), $source->getName(), Role::OWNER));
 
         $this->service->addPlayerRequest($source->getXuid());
 
-        $this->service->postPlayerJoined(
-            $member,
+        $this->service->postPartyCreate(
             $party->getId(),
+            $source->getXuid(),
             function (PongResponse $pong) use ($source, $party): void {
                 $this->cache($party);
                 $this->cacheMember($source->getXuid(), $party->getId());

@@ -115,12 +115,12 @@ final class PartiesService {
     }
 
     /**
-     * @param Member  $member
-     * @param string  $partyId
-     * @param Closure(PongResponse): void $onCompletion
+     * @param string                       $partyId
+     * @param string                       $ownershipXuid
+     * @param Closure(PongResponse): void  $onCompletion
      * @param Closure(EmptyResponse): void $onFail
      */
-    public function postPlayerJoined(Member $member, string $partyId, Closure $onCompletion, Closure $onFail): void {
+    public function postPartyCreate(string $partyId, string $ownershipXuid, Closure $onCompletion, Closure $onFail): void {
         if (!Service::getInstance()->isRunning()) {
             $onFail(EmptyResponse::create(
                 Service::CODE_INTERNAL_SERVER_ERROR,
@@ -133,7 +133,7 @@ final class PartiesService {
         $initialTimestamp = microtime(true);
 
         Curl::postRequest(
-            Service::URL . '/parties/' . $partyId . '/joined?xuid=' . $member->getXuid() . '&role=' . strtoupper($member->getRole()->name),
+            Service::URL . '/parties/' . $partyId . '/join/' . $ownershipXuid,
             [],
             10,
             Service::defaultHeaders(),
@@ -187,7 +187,7 @@ final class PartiesService {
         }
 
         Curl::postRequest(
-            Service::URL . '/parties/' . $partyId . '/invite?name=' . $name,
+            Service::URL . '/parties/' . $partyId . '/invite/' . $name,
             [],
             10,
             Service::defaultHeaders(),
@@ -247,7 +247,7 @@ final class PartiesService {
         }
 
         Curl::postRequest(
-            Service::URL . '/parties/' . $targetName . '/accept?xuid=' . $sourceXuid,
+            Service::URL . '/parties/' . $targetName . '/accept/' . $sourceXuid,
             [],
             10,
             Service::defaultHeaders(),
