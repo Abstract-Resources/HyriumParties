@@ -5,8 +5,7 @@
   "license": "Apache-2.0",
 
   "require": {
-    "php": "^8.1",
-    "ext-pmmpthread": "*"
+    "php": "^8.1"
   },
 
   "require-dev": {
