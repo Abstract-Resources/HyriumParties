@@ -211,13 +211,13 @@ final class PartiesService {
 
                 $code = $result->getCode();
                 if ($code === Service::CODE_OK) {
-                    if (!isset($body['xuid'], $body['known_name'])) {
-                        $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body response'));
-                    } elseif (!isset($body['state'])) {
+                    if (!isset($body['state'])) {
                         $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No state property'));
+                    } elseif (!isset($body['known_name'])) {
+                        $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No \'known_name\' property'));
                     } else {
                         $onCompletion(new InviteResponse(
-                            $body['xuid'],
+                            $body['xuid'] ?? null,
                             $body['known_name'],
                             InviteState::valueOf($body['state'])
                         ));
