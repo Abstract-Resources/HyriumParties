@@ -151,6 +151,9 @@ final class HyriumPartyAdapter extends PartyAdapter {
             return;
         }
 
+        $target = Server::getInstance()->getPlayerByPrefix($playerName);
+        if ($target !== null) $playerName = $target->getName();
+
         $this->service->addPlayerRequest($source->getXuid());
 
         $this->service->postPlayerAccept(
