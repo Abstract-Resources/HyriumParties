@@ -9,6 +9,7 @@ use bitrule\hyrium\parties\service\PartiesService;
 use bitrule\hyrium\parties\service\protocol\PartyNetworkDisbandedPacket;
 use bitrule\hyrium\parties\service\protocol\PartyNetworkInvitedPacket;
 use bitrule\hyrium\parties\service\response\InviteResponse;
+use bitrule\hyrium\parties\service\response\InviteState;
 use bitrule\parties\adapter\PartyAdapter;
 use bitrule\parties\object\impl\MemberImpl;
 use bitrule\parties\object\impl\PartyImpl;
@@ -118,21 +119,17 @@ final class HyriumPartyAdapter extends PartyAdapter {
             function (InviteResponse $inviteResponse) use ($playerName, $source, $party): void {
                 $this->service->removePlayerRequest($source->getXuid());
 
-                if ($inviteResponse->getXuid() === null) {
+                if ($inviteResponse->getState() === InviteState::NO_ONLINE || $inviteResponse->getXuid() === null) {
                     $source->sendMessage(TextFormat::RED . 'Player ' . $playerName . ' not is online');
-
-                    return;
-                }
-
-                if (!$inviteResponse->isInvited()) {
+                } elseif ($inviteResponse->getState() === InviteState::NO_PARTY) {
+                    $source->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . 'You are not in a party');
+                } elseif ($inviteResponse->getState() === InviteState::ALREADY_IN_PARTY) {
                     $source->sendMessage(PartiesPlugin::prefix() . TextFormat::GOLD . $inviteResponse->getKnownName() . TextFormat::RED . ' is already in a party');
+                } else {
+                    $party->addPendingInvite($inviteResponse->getXuid());
 
-                    return;
+                    $source->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'You have successfully invited ' . TextFormat::GOLD . $inviteResponse->getKnownName());
                 }
-
-                $party->addPendingInvite($inviteResponse->getXuid());
-
-                $source->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'You have successfully invited ' . TextFormat::GOLD . $inviteResponse->getKnownName());
             },
             function (EmptyResponse $response) use ($source): void {
                 $this->service->removePlayerRequest($source->getXuid());

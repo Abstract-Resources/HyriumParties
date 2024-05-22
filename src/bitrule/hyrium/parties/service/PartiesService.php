@@ -6,6 +6,7 @@ namespace bitrule\hyrium\parties\service;
 
 use bitrule\hyrium\parties\adapter\HyriumPartyAdapter;
 use bitrule\hyrium\parties\service\response\InviteResponse;
+use bitrule\hyrium\parties\service\response\InviteState;
 use bitrule\parties\object\Party;
 use bitrule\parties\PartiesPlugin;
 use bitrule\services\response\EmptyResponse;
@@ -208,17 +209,17 @@ final class PartiesService {
 
                 $code = $result->getCode();
                 if ($code === Service::CODE_OK) {
-                    if (!isset($body['xuid'], $body['known_name'], $body['invited'])) {
+                    if (!isset($body['xuid'], $body['known_name'])) {
                         $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body response'));
-
-                        return;
+                    } elseif (!isset($body['state'])) {
+                        $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No state property'));
+                    } else {
+                        $onCompletion(new InviteResponse(
+                            $body['xuid'],
+                            $body['known_name'],
+                            InviteState::valueOf($body['state'])
+                        ));
                     }
-
-                    $onCompletion(new InviteResponse(
-                        $body['xuid'],
-                        $body['known_name'],
-                        $body['invited']
-                    ));
                 } elseif (!isset($body['message'])) {
                     $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No valid body message'));
                 } else {

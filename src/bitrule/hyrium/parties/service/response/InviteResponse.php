@@ -9,12 +9,12 @@ final class InviteResponse {
     /**
      * @param string|null $xuid
      * @param string      $knownName
-     * @param bool        $invited
+     * @param InviteState $state
      */
     public function __construct(
         private readonly ?string $xuid,
         private readonly string $knownName,
-        private readonly bool $invited
+        private readonly InviteState $state
     ) {}
 
     /**
@@ -29,6 +29,13 @@ final class InviteResponse {
      */
     public function getKnownName(): string {
         return $this->knownName;
+    }
+
+    /**
+     * @return InviteState
+     */
+    public function getState(): InviteState {
+        return $this->state;
     }
 
     /**
