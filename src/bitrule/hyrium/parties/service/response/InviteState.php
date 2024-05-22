@@ -10,6 +10,7 @@ enum InviteState {
     case NO_ONLINE;
     case NO_PARTY;
     case ALREADY_IN_PARTY;
+    case ALREADY_INVITED;
 
     /**
      * @param string $name
@@ -23,6 +24,7 @@ enum InviteState {
             'NO_ONLINE' => self::NO_ONLINE,
             'NO_PARTY' => self::NO_PARTY,
             'ALREADY_IN_PARTY' => self::ALREADY_IN_PARTY,
+            'ALREADY_INVITED' => self::ALREADY_INVITED,
             default => throw new \InvalidArgumentException('Invalid InviteState name: ' . $name),
         };
     }

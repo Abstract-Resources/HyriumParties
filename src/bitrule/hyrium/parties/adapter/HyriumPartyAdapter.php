@@ -109,12 +109,6 @@ final class HyriumPartyAdapter extends PartyAdapter {
             return;
         }
 
-        if ($party->hasPendingInvite($playerName)) {
-            $source->sendMessage(TextFormat::RED . 'You have already invited ' . $playerName);
-
-            return;
-        }
-
         $this->service->addPlayerRequest($source->getXuid());
 
         $this->service->postPlayerInvite(
@@ -129,6 +123,8 @@ final class HyriumPartyAdapter extends PartyAdapter {
                     $source->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . 'You are not in a party');
                 } elseif ($inviteResponse->getState() === InviteState::ALREADY_IN_PARTY) {
                     $source->sendMessage(PartiesPlugin::prefix() . TextFormat::GOLD . $inviteResponse->getKnownName() . TextFormat::RED . ' is already in a party');
+                } elseif ($inviteResponse->getState() === InviteState::ALREADY_INVITED) {
+                    $source->sendMessage(PartiesPlugin::prefix() . TextFormat::GOLD . $inviteResponse->getKnownName() . TextFormat::RED . ' has already been invited');
                 } else {
                     $party->addPendingInvite($inviteResponse->getXuid());
 
