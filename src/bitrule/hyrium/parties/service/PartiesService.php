@@ -134,7 +134,7 @@ final class PartiesService {
         $initialTimestamp = microtime(true);
 
         Curl::postRequest(
-            Service::URL . '/parties/' . $partyId . '/join/' . $ownershipXuid,
+            Service::URL . '/parties/' . $partyId . '/create/' . $ownershipXuid,
             [],
             10,
             Service::defaultHeaders(),
