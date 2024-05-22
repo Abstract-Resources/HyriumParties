@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace bitrule\hyrium\parties\service;
 
 use bitrule\hyrium\parties\adapter\HyriumPartyAdapter;
+use bitrule\hyrium\parties\service\response\AcceptResponse;
+use bitrule\hyrium\parties\service\response\AcceptState;
 use bitrule\hyrium\parties\service\response\InviteResponse;
 use bitrule\hyrium\parties\service\response\InviteState;
 use bitrule\parties\object\Party;
@@ -232,7 +234,7 @@ final class PartiesService {
     /**
      * @param string  $sourceXuid
      * @param string  $targetName
-     * @param Closure(Party): void $onCompletion
+     * @param Closure(AcceptResponse): void $onCompletion
      * @param Closure(EmptyResponse): void $onFail
      */
     public function postPlayerAccept(string $sourceXuid, string $targetName, Closure $onCompletion, Closure $onFail): void {
@@ -269,8 +271,19 @@ final class PartiesService {
 
                 $code = $result->getCode();
                 if ($code === Service::CODE_OK) {
+                    if (!isset($body['state'])) {
+                        $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'No state property'));
+
+                        return;
+                    }
+
                     try {
-                        $onCompletion(HyriumPartyAdapter::wrapParty($body));
+                        $onCompletion(new AcceptResponse(
+                            $body['xuid'] ?? null,
+                            $body['known_name'] ?? null,
+                            AcceptState::valueOf($body['state']),
+                            isset($body['party']) ? HyriumPartyAdapter::wrapParty($body['party']) : null
+                        ));
                     } catch (Exception $e) {
                         $onFail(EmptyResponse::create(Service::CODE_INTERNAL_SERVER_ERROR, 'Failed to parse party'));
 

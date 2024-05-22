@@ -9,6 +9,8 @@ use bitrule\hyrium\parties\service\PartiesService;
 use bitrule\hyrium\parties\service\protocol\PartyNetworkDisbandedPacket;
 use bitrule\hyrium\parties\service\protocol\PartyNetworkInvitedPacket;
 use bitrule\hyrium\parties\service\protocol\PartyNetworkJoinedPacket;
+use bitrule\hyrium\parties\service\response\AcceptResponse;
+use bitrule\hyrium\parties\service\response\AcceptState;
 use bitrule\hyrium\parties\service\response\InviteResponse;
 use bitrule\hyrium\parties\service\response\InviteState;
 use bitrule\parties\adapter\PartyAdapter;
@@ -158,20 +160,28 @@ final class HyriumPartyAdapter extends PartyAdapter {
         $this->service->postPlayerAccept(
             sourceXuid: $source->getXuid(),
             targetName: $playerName,
-            onCompletion: function (Party $party) use ($source): void {
+            onCompletion: function (AcceptResponse $acceptResponse) use ($playerName, $source): void {
                 $this->service->removePlayerRequest($source->getXuid());
 
-                if (!$party->isMember($source->getXuid())) {
-                    $source->sendMessage(TextFormat::RED . $party->getOwnership()->getName() . ' has not invited you to the party');
+                if ($acceptResponse->getState() === AcceptState::NO_LOADED) {
+                    $source->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . 'An error occurred while trying to join the party');
+                } elseif ($acceptResponse->getState() === AcceptState::ALREADY_IN_PARTY) {
+                    $source->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . 'You are already in a party');
+                } elseif ($acceptResponse->getState() === AcceptState::NO_ONLINE || $acceptResponse->getKnownName() === null) {
+                    $source->sendMessage(TextFormat::RED . $playerName . ' is not online');
+                } elseif ($acceptResponse->getState() === AcceptState::NO_PARTY) {
+                    $source->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . $acceptResponse->getKnownName() . ' is not in a party');
+                } elseif ($acceptResponse->getState() === AcceptState::NO_INVITE) {
+                    $source->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . $acceptResponse->getKnownName() . ' has not invited you to the party');
+                } elseif (($party = $acceptResponse->getParty()) === null) {
+                    $source->sendMessage(PartiesPlugin::prefix() . TextFormat::RED . 'Failed to join the party');
+                } else {
+                    if ($this->getPartyById($party->getId()) === null) $this->cache($party);
 
-                    return;
+                    $this->postPlayerJoin($source->getXuid(), $source->getName(), $party->getId());
+
+                    $source->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'You have successfully joined to the ' . TextFormat::GOLD . $party->getOwnership()->getName() . TextFormat::GREEN . '\'s party!');
                 }
-
-                if ($this->getPartyById($party->getId()) === null) $this->cache($party);
-
-                $this->postPlayerJoin($source->getXuid(), $source->getName(), $party->getId());
-
-                $source->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'You have successfully joined to the ' . TextFormat::GOLD . $party->getOwnership()->getName() . TextFormat::GREEN . '\'s party!');
             },
             onFail: function (EmptyResponse $response) use ($playerName, $source): void {
                 $this->service->removePlayerRequest($source->getXuid());
