@@ -8,6 +8,7 @@ use bitrule\hyrium\parties\listener\PlayerPreLoginListener;
 use bitrule\hyrium\parties\service\PartiesService;
 use bitrule\hyrium\parties\service\protocol\PartyNetworkDisbandedPacket;
 use bitrule\hyrium\parties\service\protocol\PartyNetworkInvitedPacket;
+use bitrule\hyrium\parties\service\protocol\PartyNetworkJoinedPacket;
 use bitrule\hyrium\parties\service\response\InviteResponse;
 use bitrule\hyrium\parties\service\response\InviteState;
 use bitrule\parties\adapter\PartyAdapter;
@@ -41,6 +42,7 @@ final class HyriumPartyAdapter extends PartyAdapter {
     public static function create(PluginBase $plugin): self {
         Service::getInstance()->registerPacket(new PartyNetworkDisbandedPacket());
         Service::getInstance()->registerPacket(new PartyNetworkInvitedPacket());
+        Service::getInstance()->registerPacket(new PartyNetworkJoinedPacket());
 
         Server::getInstance()->getPluginManager()->registerEvents(new PlayerPreLoginListener(), $plugin);
 
@@ -165,8 +167,9 @@ final class HyriumPartyAdapter extends PartyAdapter {
                     return;
                 }
 
-                $this->cache($party);
-                $this->cacheMember($source->getXuid(), $party->getId());
+                if ($this->getPartyById($party->getId()) === null) $this->cache($party);
+
+                $this->postPlayerJoin($source->getXuid(), $source->getName(), $party->getId());
 
                 $source->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'You have successfully joined to the ' . TextFormat::GOLD . $party->getOwnership()->getName() . TextFormat::GREEN . '\'s party!');
             },
@@ -183,6 +186,30 @@ final class HyriumPartyAdapter extends PartyAdapter {
                 }
             }
         );
+    }
+
+    /**
+     * @param string $xuid
+     * @param string $name
+     * @param string $partyId
+     */
+    public function postPlayerJoin(string $xuid, string $name, string $partyId): void {
+        $party = $this->getPartyById($partyId);
+        if ($party === null) return;
+
+        // Add the player to the party because this prevents have an outdated party
+        // an example is if the ownership joins to a server where the party is already created
+        // and the party is outdated, they will be able to invite the player again
+        $party->addMember(new MemberImpl($xuid, $name, Role::MEMBER));
+        $this->cacheMember($xuid, $partyId);
+
+        $joinedMessage = PartiesPlugin::prefix() . TextFormat::YELLOW . $name . TextFormat::GOLD . ' has joined to the party!';
+        foreach ($party->getMembers() as $member) {
+            $playerObject = Service::getInstance()->getPlayerObject($member->getXuid());
+            if ($playerObject === null || !$playerObject->isOnline()) continue;
+
+            $playerObject->sendMessage($joinedMessage);
+        }
     }
 
     /**

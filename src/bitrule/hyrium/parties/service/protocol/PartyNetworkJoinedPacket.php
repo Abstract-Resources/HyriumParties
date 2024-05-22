@@ -5,14 +5,17 @@ declare(strict_types=1);
 namespace bitrule\hyrium\parties\service\protocol;
 
 use bitrule\hyrium\parties\adapter\HyriumPartyAdapter;
+use bitrule\parties\object\impl\MemberImpl;
+use bitrule\parties\object\Role;
 use bitrule\parties\PartiesPlugin;
 use bitrule\services\broker\AbstractPacket;
 use bitrule\services\Service;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\Server;
 use pocketmine\utils\TextFormat;
 use RuntimeException;
 
-final class PartyNetworkInvitedPacket extends AbstractPacket {
+final class PartyNetworkJoinedPacket extends AbstractPacket {
 
     /** @var string|null */
     private ?string $id = null;
@@ -22,7 +25,7 @@ final class PartyNetworkInvitedPacket extends AbstractPacket {
     private ?string $playerName = null;
 
     public function __construct() {
-        parent::__construct(2);
+        parent::__construct(4);
     }
 
     /**
@@ -56,20 +59,11 @@ final class PartyNetworkInvitedPacket extends AbstractPacket {
             throw new RuntimeException('Party adapter is not an instance of HyriumPartyAdapter');
         }
 
-        $party = $partyAdapter->getPartyById($this->id);
-        if ($party === null) return;
+        // TODO: Change this, first check if the player is connected here, if it is
+        // No send the message, because we already sent that message after got a response from the service
+        $player = Service::getInstance()->getPlayerObject($this->playerXuid);
+        if ($player !== null && $player->isOnline()) return;
 
-        // Add the player to the party because this prevents have an outdated party
-        // an example is if the ownership joins to a server where the party is already created
-        // and the party is outdated, they will be able to invite the player again
-        $party->addPendingInvite($this->playerXuid);
-
-        $invitedMessage = PartiesPlugin::prefix() . TextFormat::YELLOW . $party->getOwnership()->getName() . TextFormat::GOLD . ' has invited ' . TextFormat::YELLOW . $this->playerName . TextFormat::GOLD . ' to the party!';
-        foreach ($party->getMembers() as $member) {
-            $playerObject = Service::getInstance()->getPlayerObject($member->getXuid());
-            if ($playerObject === null || !$playerObject->isOnline()) continue;
-
-            $playerObject->sendMessage($invitedMessage);
-        }
+        $partyAdapter->postPlayerJoin($this->playerXuid, $this->playerName, $this->id);
     }
 }
