@@ -64,7 +64,7 @@ final class PartiesService {
      * @param Closure(Party): void $onCompletion
      * @param Closure(EmptyResponse): void $onFail
      */
-    public function fetch(string $xuid, Closure $onCompletion, Closure $onFail): void {
+    public function lookup(string $xuid, Closure $onCompletion, Closure $onFail): void {
         if (!Service::getInstance()->isRunning()) {
             $onFail(EmptyResponse::create(
                 Service::CODE_INTERNAL_SERVER_ERROR,
@@ -75,7 +75,7 @@ final class PartiesService {
         }
 
         Curl::getRequest(
-            Service::URL . '/parties?xuid=' . $xuid,
+            Service::URL . '/parties/' . $xuid . '/lookup/xuid',
             10,
             Service::defaultHeaders(),
             function (?InternetRequestResult $result) use ($onCompletion, $onFail): void {

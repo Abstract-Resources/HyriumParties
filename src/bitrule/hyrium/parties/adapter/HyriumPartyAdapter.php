@@ -330,7 +330,7 @@ final class HyriumPartyAdapter extends PartyAdapter {
         if ($party !== null) {
             $onCompletion($party);
         } else {
-            $this->service->fetch(
+            $this->service->lookup(
                 $sourceXuid,
                 $onCompletion,
                 function (EmptyResponse $response) use ($sourceXuid): void {
