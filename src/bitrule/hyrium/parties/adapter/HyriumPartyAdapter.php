@@ -72,10 +72,9 @@ final class HyriumPartyAdapter extends PartyAdapter {
             $party->getId(),
             $source->getXuid(),
             function (PongResponse $pong) use ($source, $party): void {
-                $this->cache($party);
-                $this->cacheMember($source->getXuid(), $party->getId());
+                $this->postCreate($source, $party);
 
-                $source->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'You have successfully created a party!');
+//                $source->sendMessage(PartiesPlugin::prefix() . TextFormat::GREEN . 'You have successfully created a party!');
 
                 $this->service->removePlayerRequest($source->getXuid());
             },
@@ -223,10 +222,10 @@ final class HyriumPartyAdapter extends PartyAdapter {
 
     /**
      * @param Player $source
-     * @param Player $target
+     * @param string $playerName
      * @param Party  $party
      */
-    public function onPlayerKick(Player $source, Player $target, Party $party): void {
+    public function onPlayerKick(Player $source, string $playerName, Party $party): void {
         // TODO: Implement processKickPlayer() method.
     }
 
@@ -236,6 +235,15 @@ final class HyriumPartyAdapter extends PartyAdapter {
      */
     public function onPlayerLeave(Player $source, Party $party): void {
         // TODO: Implement processLeavePlayer() method.
+    }
+
+    /**
+     * @param Player $source
+     * @param string $playerName
+     * @param Party  $party
+     */
+    public function onPartyTransfer(Player $source, string $playerName, Party $party): void {
+        // TODO: Implement onPartyTransfer() method.
     }
 
     /**
@@ -306,7 +314,7 @@ final class HyriumPartyAdapter extends PartyAdapter {
     /**
      * @param string $sourceXuid
      */
-    public function loadParty(string $sourceXuid): void {
+    public function lookupParty(string $sourceXuid): void {
         // I think this going to be an issue when many players from the same party join at the same time
         // Because the party is going to be fetched multiple times
         // Maybe the solution is sending a packet of redis to the new server when a player request change his source server
